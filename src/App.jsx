@@ -504,8 +504,17 @@ const Home = ({ user, isLoggedIn }) => {
 
       {/* Features Section */}
       <section className="features-section">
-        <div className="feature-card">
-          <div className="feature-icon">🎤</div>
+
+     <div className="feature-icon"> 🌍</div>
+          <h3 className="feature-title">Our Mission</h3>
+          <p className="feature-description">
+            To empower young people through education,
+            them, and leadership — helping them build
+             future for themselves and their comunities.
+          </p>
+        </div>
+        
+        <div className="feature-feature-card    <div className="feature-icon">🎤</div>
           <h3 className="feature-title">Speak Up</h3>
           <p className="feature-description">
             Share your ideas, opinions, and concerns in a safe and supportive environment. 

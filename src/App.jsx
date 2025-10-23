@@ -514,7 +514,8 @@ const Home = ({ user, isLoggedIn }) => {
           </p>
         </div>
         
-        <div className="feature-feature-card    <div className="feature-icon">🎤</div>
+        <div className="feature-feature-card>
+          <div className="feature-icon">🎤</div>
           <h3 className="feature-title">Speak Up</h3>
           <p className="feature-description">
             Share your ideas, opinions, and concerns in a safe and supportive environment. 

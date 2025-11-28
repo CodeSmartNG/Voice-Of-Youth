@@ -3,7 +3,7 @@ import Header from './components/Header';
 import Home from './components/Home';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
-import Events from './components/Events';
+import Events from './components/Events'; // Add this import
 import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
@@ -72,58 +72,6 @@ const mockSignUp = (email, password, firstName, lastName) => {
 
 const mockSignOut = () => {
   return Promise.resolve();
-};
-
-// Events Component (if you don't have Events.jsx yet)
-const Events = () => {
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: "Youth Leadership Summit",
-      date: "2024-01-15",
-      time: "10:00 AM",
-      location: "Virtual",
-      description: "Join us for a day of inspiring talks and workshops about leadership and community engagement."
-    },
-    {
-      id: 2,
-      title: "Community Service Day",
-      date: "2024-01-20",
-      time: "9:00 AM",
-      location: "Central Park",
-      description: "Make a difference in your community through various service activities and clean-up projects."
-    },
-    {
-      id: 3,
-      title: "Public Speaking Workshop",
-      date: "2024-01-25",
-      time: "2:00 PM",
-      location: "Community Center",
-      description: "Improve your public speaking skills and learn to express your ideas confidently."
-    }
-  ];
-
-  return (
-    <div className="events-page">
-      <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: '#333' }}>
-        📅 Upcoming Events
-      </h1>
-      <div className="events-grid">
-        {upcomingEvents.map(event => (
-          <div key={event.id} className="event-card">
-            <h3>{event.title}</h3>
-            <p><strong>📅 Date:</strong> {event.date}</p>
-            <p><strong>⏰ Time:</strong> {event.time}</p>
-            <p><strong>📍 Location:</strong> {event.location}</p>
-            <p>{event.description}</p>
-            <button className="cta-button" style={{ marginTop: '1rem' }}>
-              Register Now
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 };
 
 // Main App Component

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from './firebase/config';
+  userStorage, 
+  sessionStorage, 
+  analyticsStorage 
+} from './utils/storage';
 import Header from './components/Header';
 import Home from './components/Home';
 import Login from './components/Login';
@@ -15,56 +12,54 @@ import Events from './components/Events';
 import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
-// Real Firebase authentication functions
-const realSignIn = async (email, password) => {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
+// Authentication functions using localStorage
+const localSignIn = async (email, password) => {
+  const user = userStorage.findUserByEmail(email);
   
-  // Get additional user data from Firestore
-  const userDoc = await getDoc(doc(db, 'users', user.uid));
-  const userData = userDoc.data();
+  if (!user) {
+    throw new Error('Invalid email or password');
+  }
+
+  if (user.password !== password) {
+    throw new Error('Invalid email or password');
+  }
+
+  // Don't return password in user object
+  const { password: _, ...userWithoutPassword } = user;
   
   return {
-    user: {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      firstName: userData?.firstName || '',
-      lastName: userData?.lastName || '',
-      joinDate: userData?.joinDate || new Date().toLocaleDateString(),
-      isAdmin: userData?.isAdmin || false
-    }
+    user: userWithoutPassword
   };
 };
 
-const realSignUp = async (email, password, firstName, lastName) => {
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
-  
-  // Set admin role for specific email or condition
+const localSignUp = async (email, password, firstName, lastName) => {
   const isAdmin = email === 'admin@voy.com' || email.includes('admin');
   
   const userData = {
-    uid: user.uid,
-    email: user.email,
+    email,
+    password, // In real app, this would be hashed
+    firstName,
+    lastName,
     displayName: `${firstName} ${lastName}`,
-    firstName: firstName,
-    lastName: lastName,
-    joinDate: new Date().toLocaleDateString(),
-    isAdmin: isAdmin,
-    createdAt: new Date().toISOString()
+    isAdmin,
+    joinDate: new Date().toLocaleDateString()
   };
+
+  const newUser = userStorage.createUser(userData);
   
-  // Save user data to Firestore
-  await setDoc(doc(db, 'users', user.uid), userData);
+  // Update stats
+  analyticsStorage.incrementStat('totalUsers');
+  
+  // Don't return password
+  const { password: _, ...userWithoutPassword } = newUser;
   
   return {
-    user: userData
+    user: userWithoutPassword
   };
 };
 
-const realSignOut = () => {
-  return signOut(auth);
+const localSignOut = () => {
+  return Promise.resolve(sessionStorage.clearSession());
 };
 
 // Main App Component
@@ -77,37 +72,21 @@ function App() {
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Get user data from Firestore
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setIsLoggedIn(true);
-            setUser(userData);
-            if (userData.isAdmin) {
-              setIsAdmin(true);
-            }
-          }
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
-        setIsAdmin(false);
-        localStorage.removeItem('voyCurrentUser');
+    const currentUser = sessionStorage.getCurrentUser();
+    if (currentUser) {
+      setIsLoggedIn(true);
+      setUser(currentUser);
+      if (currentUser.isAdmin) {
+        setIsAdmin(true);
       }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
-  const handleLogin = async (userData) => {
+  const handleLogin = (userData) => {
     setIsLoggedIn(true);
     setUser(userData);
+    sessionStorage.setCurrentUser(userData);
     
     if (userData.isAdmin) {
       setIsAdmin(true);
@@ -116,9 +95,10 @@ function App() {
     setCurrentPage('home');
   };
 
-  const handleSignUp = async (userData) => {
+  const handleSignUp = (userData) => {
     setIsLoggedIn(true);
     setUser(userData);
+    sessionStorage.setCurrentUser(userData);
     
     if (userData.isAdmin) {
       setIsAdmin(true);
@@ -129,7 +109,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await realSignOut();
+      await localSignOut();
       setIsLoggedIn(false);
       setUser(null);
       setIsAdmin(false);
@@ -139,7 +119,6 @@ function App() {
     }
   };
 
-  // Update Login and SignUp components to use real Firebase functions
   const renderPage = () => {
     if (loading) {
       return (
@@ -155,7 +134,7 @@ function App() {
           <Login 
             onLogin={handleLogin} 
             onSwitchToSignUp={() => setCurrentPage('signup')}
-            signInFunction={realSignIn}
+            signInFunction={localSignIn}
           />
         );
       case 'signup':
@@ -163,7 +142,7 @@ function App() {
           <SignUp 
             onSignUp={handleSignUp} 
             onSwitchToLogin={() => setCurrentPage('login')}
-            signUpFunction={realSignUp}
+            signUpFunction={localSignUp}
           />
         );
       case 'events':

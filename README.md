@@ -1,16 +1,52 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# 🎤 Voice of Youth - Youth Empowerment Platform
 
-Currently, two official plugins are available:
+A modern web application designed to empower young people through community engagement, events, and content sharing. Built with React.js, this platform provides a space for youth to connect, share ideas, and create positive change in their communities.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![Voice of Youth](https://img.shields.io/badge/Voice-Youth-brightgreen)
+![React](https://img.shields.io/badge/React-18.2.0-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## React Compiler
+## 🌟 Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🚀 Core Features
+- **User Authentication** - Secure signup and login system
+- **Admin Dashboard** - Content management for administrators
+- **Media-Rich Posts** - Support for images and videos with descriptions
+- **Event Management** - Upcoming events and registration
+- **Responsive Design** - Mobile-first approach for all devices
+- **Community Engagement** - WhatsApp integration for real-time communication
 
-## Expanding the ESLint configuration
+### 👥 User Features
+- **Personalized Dashboard** - Welcome messages and user-specific content
+- **Event Registration** - Sign up for youth empowerment events
+- **Community Stats** - Track engagement and impact metrics
+- **Profile Management** - User profiles with join dates and personal information
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### ⚙️ Admin Features
+- **Content Creation** - Post images, videos with titles and descriptions
+- **Post Management** - Create, view, and delete posts
+- **Media Upload** - Support for multiple file formats
+- **Analytics** - Post statistics and engagement metrics
+- **Admin Authentication** - Secure admin-only access
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React 18.2.0
+- **Styling**: Custom CSS with modern design principles
+- **Storage**: Browser LocalStorage (Mock Database)
+- **Icons**: Emoji-based icon system
+- **Media Support**: Images (JPG, PNG) and Videos (MP4, MOV)
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js (version 14 or higher)
+- npm or yarn package manager
+
+### Setup Instructions
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/voice-of-youth.git
+   cd voice-of-youth

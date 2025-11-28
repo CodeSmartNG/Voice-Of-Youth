@@ -21,6 +21,48 @@ const SignUp = ({ onSignUp, onSwitchToLogin }) => {
     setError('');
   };
 
+
+
+
+
+
+// In your mockSignUp function, you can add admin logic:
+const mockSignUp = (email, password, firstName, lastName) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
+      const existingUser = users.find(u => u.email === email);
+
+      if (existingUser) {
+        reject(new Error('Email already exists'));
+      } else {
+        // Set admin role for specific email or condition
+        const isAdmin = email === 'admin@voy.com' || email.includes('admin');
+        
+        const newUser = {
+          uid: 'user-' + Date.now(),
+          email: email,
+          password: password,
+          displayName: `${firstName} ${lastName}`,
+          firstName: firstName,
+          lastName: lastName,
+          joinDate: new Date().toLocaleDateString(),
+          isAdmin: isAdmin
+        };
+
+        users.push(newUser);
+        localStorage.setItem('voyUsers', JSON.stringify(users));
+
+        resolve({
+          user: newUser
+        });
+      }
+    }, 1000);
+  });
+};
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     

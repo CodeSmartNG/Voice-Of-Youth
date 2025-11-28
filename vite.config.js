@@ -6,29 +6,11 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: ['some-external-package'],
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom']
-        }
-      }
-    },
-    outDir: 'dist',
-    sourcemap: true
+      external: ['some-external-package']
+    }
   },
   server: {
     port: 3000,
-    open: true,
-    host: true // listen on all addresses
-  },
-  preview: {
-    port: 3000,
-    host: true
-  },
-  resolve: {
-    alias: {
-      '@': '/src',
-      '@components': '/src/components'
-    }
+    open: true // automatically open browser
   }
 })

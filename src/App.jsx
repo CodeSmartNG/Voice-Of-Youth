@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './index.css';
+import './App.css';
 
 // Mock Firebase functions
 const mockAuth = {

@@ -1,6 +1,222 @@
 /* App.css - Complete Styles for Voice of Youth */
 
 /* CSS Variables for consistent theming */
+
+
+/* Enhanced Auth Styles */
+.auth-subtitle {
+  text-align: center;
+  color: var(--text-light);
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-help {
+  color: var(--text-light);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.password-label-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.forgot-password-link {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.forgot-password-link:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+}
+
+.checkbox-container input {
+  margin-right: 0.5rem;
+}
+
+.checkmark {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--text-light);
+  border-radius: 3px;
+  margin-right: 0.5rem;
+  position: relative;
+  transition: var(--transition);
+}
+
+.checkbox-container input:checked + .checkmark {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.checkbox-container input:checked + .checkmark::after {
+  content: '✓';
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 2rem 0;
+  position: relative;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--text-light);
+  opacity: 0.3;
+}
+
+.auth-divider span {
+  background: var(--bg-white);
+  padding: 0 1rem;
+  position: relative;
+}
+
+.social-login {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid var(--text-light);
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-dark);
+  font-weight: 600;
+  cursor: not-allowed;
+  transition: var(--transition);
+  opacity: 0.6;
+}
+
+.social-btn:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.social-icon {
+  font-size: 1.2rem;
+}
+
+.google-btn {
+  border-color: #DB4437;
+}
+
+.facebook-btn {
+  border-color: #4267B2;
+}
+
+.auth-terms {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.terms-text {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  line-height: 1.4;
+}
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.auth-btn.loading {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+/* Responsive auth forms */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .social-login {
+    gap: 0.75rem;
+  }
+  
+  .social-btn {
+    padding: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+  
+  .form-options {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
+
+
 :root {
   --primary-color: #4361ee;
   --primary-dark: #3a56d4;

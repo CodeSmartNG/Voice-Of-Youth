@@ -19,6 +19,26 @@ const Header = ({ isLoggedIn, user, onLogout, onNavigate, currentPage }) => {
 
         {/* Navigation Links */}
         <nav className="nav-links">
+
+
+
+// In your Header component, add this to the nav-links:
+{isAdmin && (
+  <button 
+    className={`nav-link ${currentPage === 'admin' ? 'active' : ''}`}
+    onClick={() => onNavigate('admin')}
+  >
+    <span className="nav-icon">⚙️</span>
+    <span className="nav-text">Admin</span>
+  </button>
+)}
+
+
+
+
+
+
+
           <button 
             className={`nav-link ${currentPage === 'home' ? 'active' : ''}`}
             onClick={() => onNavigate('home')}

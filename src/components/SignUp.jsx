@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 
-
-
-const SignUp = ({ onSignUp, onSwitchToLogin }) => {
+const SignUp = ({ onSignUp, onSwitchToLogin, signUpFunction }) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,58 +19,21 @@ const SignUp = ({ onSignUp, onSwitchToLogin }) => {
     setError('');
   };
 
-
-
-
-
-
-// In your mockSignUp function, you can add admin logic:
-const mockSignUp = (email, password, firstName, lastName) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
-      const existingUser = users.find(u => u.email === email);
-
-      if (existingUser) {
-        reject(new Error('Email already exists'));
-      } else {
-        // Set admin role for specific email or condition
-        const isAdmin = email === 'admin@voy.com' || email.includes('admin');
-        
-        const newUser = {
-          uid: 'user-' + Date.now(),
-          email: email,
-          password: password,
-          displayName: `${firstName} ${lastName}`,
-          firstName: firstName,
-          lastName: lastName,
-          joinDate: new Date().toLocaleDateString(),
-          isAdmin: isAdmin
-        };
-
-        users.push(newUser);
-        localStorage.setItem('voyUsers', JSON.stringify(users));
-
-        resolve({
-          user: newUser
-        });
-      }
-    }, 1000);
-  });
-};
-
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match!");
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password should be at least 6 characters");
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    if (!formData.firstName || !formData.lastName) {
+      setError("Please fill in all required fields");
       return;
     }
 
@@ -80,53 +41,25 @@ const mockSignUp = (email, password, firstName, lastName) => {
     setError('');
 
     try {
-      // Create user with email and password
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const userCredential = await signUpFunction(
         formData.email,
-        formData.password
+        formData.password,
+        formData.firstName,
+        formData.lastName
       );
 
       const user = userCredential.user;
-
-      // Update user profile with display name
-      await updateProfile(user, {
-        displayName: `${formData.firstName} ${formData.lastName}`
-      });
-
-      // Save additional user data to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        createdAt: new Date(),
-        role: 'member',
-        association: 'Voice of Youth'
-      });
-
-      const userData = {
-        uid: user.uid,
-        email: user.email,
-        displayName: `${formData.firstName} ${formData.lastName}`,
-        firstName: formData.firstName,
-        lastName: formData.lastName
-      };
-
-      onSignUp(userData);
+      onSignUp(user);
     } catch (error) {
       console.error('Signup error:', error);
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          setError('An account with this email already exists');
-          break;
-        case 'auth/invalid-email':
-          setError('Invalid email address');
-          break;
-        case 'auth/weak-password':
-          setError('Password is too weak');
-          break;
-        default:
-          setError('Failed to create account. Please try again');
+      if (error.code === 'auth/email-already-in-use') {
+        setError('This email is already registered. Please use a different email or login.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else if (error.code === 'auth/weak-password') {
+        setError('Password is too weak. Please choose a stronger password.');
+      } else {
+        setError('Failed to create account. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -135,90 +68,117 @@ const mockSignUp = (email, password, firstName, lastName) => {
 
   return (
     <div className="auth-container">
-      <h2 className="auth-title">Join Voice of Youth</h2>
-      {error && <div className="error-message">{error}</div>}
+      <h2 className="auth-title">✨ Join Voice of Youth</h2>
+      <p className="auth-subtitle">Create your account and start making a difference</p>
+      
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+      
       <form className="auth-form" onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label">First Name</label>
-          <input
-            type="text"
-            name="firstName"
-            className="form-input"
-            value={formData.firstName}
-            onChange={handleChange}
-            required
-            disabled={loading}
-          />
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">👤 First Name *</label>
+            <input
+              type="text"
+              name="firstName"
+              className="form-input"
+              value={formData.firstName}
+              onChange={handleChange}
+              placeholder="Enter your first name"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">👤 Last Name *</label>
+            <input
+              type="text"
+              name="lastName"
+              className="form-input"
+              value={formData.lastName}
+              onChange={handleChange}
+              placeholder="Enter your last name"
+              required
+              disabled={loading}
+            />
+          </div>
         </div>
-        
+
         <div className="form-group">
-          <label className="form-label">Last Name</label>
-          <input
-            type="text"
-            name="lastName"
-            className="form-input"
-            value={formData.lastName}
-            onChange={handleChange}
-            required
-            disabled={loading}
-          />
-        </div>
-        
-        <div className="form-group">
-          <label className="form-label">Email</label>
+          <label className="form-label">📧 Email Address *</label>
           <input
             type="email"
             name="email"
             className="form-input"
             value={formData.email}
             onChange={handleChange}
+            placeholder="Enter your email address"
             required
             disabled={loading}
           />
         </div>
-        
+
         <div className="form-group">
-          <label className="form-label">Password</label>
+          <label className="form-label">🔒 Password *</label>
           <input
             type="password"
             name="password"
             className="form-input"
             value={formData.password}
             onChange={handleChange}
-            required
+            placeholder="Create a password (min 6 characters)"
             minLength="6"
+            required
             disabled={loading}
           />
-          <small style={{color: '#666', fontSize: '0.8rem'}}>Minimum 6 characters</small>
+          <small className="form-help">Must be at least 6 characters long</small>
         </div>
-        
+
         <div className="form-group">
-          <label className="form-label">Confirm Password</label>
+          <label className="form-label">✅ Confirm Password *</label>
           <input
             type="password"
             name="confirmPassword"
             className="form-input"
             value={formData.confirmPassword}
             onChange={handleChange}
+            placeholder="Confirm your password"
             required
             disabled={loading}
           />
         </div>
-        
+
         <button 
           type="submit" 
-          className="auth-btn"
+          className={`auth-btn ${loading ? 'loading' : ''}`}
           disabled={loading}
         >
-          {loading ? 'Creating Account...' : 'Sign Up'}
+          {loading ? (
+            <>
+              <span className="spinner"></span>
+              Creating Account...
+            </>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
-      
+
       <div className="auth-switch">
         Already have an account?{' '}
         <span className="switch-link" onClick={onSwitchToLogin}>
           Login here
         </span>
+      </div>
+
+      <div className="auth-terms">
+        <p className="terms-text">
+          By creating an account, you agree to our Terms of Service and Privacy Policy.
+        </p>
       </div>
     </div>
   );

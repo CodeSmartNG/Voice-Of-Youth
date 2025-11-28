@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { auth } from '../firebase/config';
+
 
 const Login = ({ onLogin, onSwitchToSignUp }) => {
   const [formData, setFormData] = useState({

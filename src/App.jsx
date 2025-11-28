@@ -1,77 +1,70 @@
 import React, { useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase/config';
 import Header from './components/Header';
 import Home from './components/Home';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
-import Events from './components/Events'; // Add this import
+import Events from './components/Events';
 import AdminDashboard from './components/AdminDashboard';
 import './App.css';
 
-// Mock Firebase functions (keep these in App.jsx)
-const mockAuth = {
-  currentUser: null
+// Real Firebase authentication functions
+const realSignIn = async (email, password) => {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+  
+  // Get additional user data from Firestore
+  const userDoc = await getDoc(doc(db, 'users', user.uid));
+  const userData = userDoc.data();
+  
+  return {
+    user: {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      firstName: userData?.firstName || '',
+      lastName: userData?.lastName || '',
+      joinDate: userData?.joinDate || new Date().toLocaleDateString(),
+      isAdmin: userData?.isAdmin || false
+    }
+  };
 };
 
-const mockSignIn = (email, password) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
-      const user = users.find(u => u.email === email && u.password === password);
-
-      if (user) {
-        resolve({
-          user: {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            joinDate: user.joinDate,
-            isAdmin: user.isAdmin
-          }
-        });
-      } else {
-        reject(new Error('Invalid email or password'));
-      }
-    }, 1000);
-  });
+const realSignUp = async (email, password, firstName, lastName) => {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const user = userCredential.user;
+  
+  // Set admin role for specific email or condition
+  const isAdmin = email === 'admin@voy.com' || email.includes('admin');
+  
+  const userData = {
+    uid: user.uid,
+    email: user.email,
+    displayName: `${firstName} ${lastName}`,
+    firstName: firstName,
+    lastName: lastName,
+    joinDate: new Date().toLocaleDateString(),
+    isAdmin: isAdmin,
+    createdAt: new Date().toISOString()
+  };
+  
+  // Save user data to Firestore
+  await setDoc(doc(db, 'users', user.uid), userData);
+  
+  return {
+    user: userData
+  };
 };
 
-const mockSignUp = (email, password, firstName, lastName) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
-      const existingUser = users.find(u => u.email === email);
-
-      if (existingUser) {
-        reject(new Error('Email already exists'));
-      } else {
-        const isAdmin = email === 'admin@voy.com' || email.includes('admin');
-        
-        const newUser = {
-          uid: 'user-' + Date.now(),
-          email: email,
-          password: password,
-          displayName: `${firstName} ${lastName}`,
-          firstName: firstName,
-          lastName: lastName,
-          joinDate: new Date().toLocaleDateString(),
-          isAdmin: isAdmin
-        };
-
-        users.push(newUser);
-        localStorage.setItem('voyUsers', JSON.stringify(users));
-
-        resolve({
-          user: newUser
-        });
-      }
-    }, 1000);
-  });
-};
-
-const mockSignOut = () => {
-  return Promise.resolve();
+const realSignOut = () => {
+  return signOut(auth);
 };
 
 // Main App Component
@@ -80,23 +73,41 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Check if user is logged in on app start
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem('voyCurrentUser'));
-    if (currentUser) {
-      setIsLoggedIn(true);
-      setUser(currentUser);
-      if (currentUser.isAdmin) {
-        setIsAdmin(true);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Get user data from Firestore
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setIsLoggedIn(true);
+            setUser(userData);
+            if (userData.isAdmin) {
+              setIsAdmin(true);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+        setIsAdmin(false);
+        localStorage.removeItem('voyCurrentUser');
       }
-    }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const handleLogin = (userData) => {
+  const handleLogin = async (userData) => {
     setIsLoggedIn(true);
     setUser(userData);
-    localStorage.setItem('voyCurrentUser', JSON.stringify(userData));
     
     if (userData.isAdmin) {
       setIsAdmin(true);
@@ -105,10 +116,9 @@ function App() {
     setCurrentPage('home');
   };
 
-  const handleSignUp = (userData) => {
+  const handleSignUp = async (userData) => {
     setIsLoggedIn(true);
     setUser(userData);
-    localStorage.setItem('voyCurrentUser', JSON.stringify(userData));
     
     if (userData.isAdmin) {
       setIsAdmin(true);
@@ -119,23 +129,43 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await mockSignOut();
+      await realSignOut();
       setIsLoggedIn(false);
       setUser(null);
       setIsAdmin(false);
-      localStorage.removeItem('voyCurrentUser');
       setCurrentPage('home');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
+  // Update Login and SignUp components to use real Firebase functions
   const renderPage = () => {
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner">Loading...</div>
+        </div>
+      );
+    }
+
     switch (currentPage) {
       case 'login':
-        return <Login onLogin={handleLogin} onSwitchToSignUp={() => setCurrentPage('signup')} />;
+        return (
+          <Login 
+            onLogin={handleLogin} 
+            onSwitchToSignUp={() => setCurrentPage('signup')}
+            signInFunction={realSignIn}
+          />
+        );
       case 'signup':
-        return <SignUp onSignUp={handleSignUp} onSwitchToLogin={() => setCurrentPage('login')} />;
+        return (
+          <SignUp 
+            onSignUp={handleSignUp} 
+            onSwitchToLogin={() => setCurrentPage('login')}
+            signUpFunction={realSignUp}
+          />
+        );
       case 'events':
         return <Events />;
       case 'admin':

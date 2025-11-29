@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sessionStorage } from '../utils/storage';
+import './Auth.css';
 
 const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   const [formData, setFormData] = useState({

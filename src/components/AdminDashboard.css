@@ -1,37 +1,3 @@
-/* Admin Dashboard Enhanced Styles */
-.media-actions {
-  margin-top: 0.5rem;
-}
-
-.clear-media-btn {
-  background: #6c757d;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: background 0.3s ease;
-}
-
-.clear-media-btn:hover {
-  background: #5a6268;
-}
-
-.post-stats {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: var(--text-light);
-}
-
-.post-stats span {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 .edit-btn {
   background: #ffc107;
   color: #212529;
@@ -86,9 +52,14 @@
 
 /* Form state indicators */
 .form-header h2::after {
-  content: editingPost ? ' (Editing)' : '';
+  content: '';
   color: var(--primary-color);
   font-size: 0.8em;
+}
+
+/* Dynamic content for editing state - handled in JS */
+.form-header h2.editing::after {
+  content: ' (Editing)';
 }
 
 /* Responsive post actions */
@@ -144,4 +115,38 @@
 .status-updated {
   background: #fff3cd;
   color: #856404;
+}
+
+/* Media actions */
+.media-actions {
+  margin-top: 0.5rem;
+}
+
+.clear-media-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.3s ease;
+}
+
+.clear-media-btn:hover {
+  background: #5a6268;
+}
+
+.post-stats {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.post-stats span {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }

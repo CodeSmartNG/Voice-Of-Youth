@@ -128,5 +128,4 @@ const Header = ({ isLoggedIn, isAdmin, user, onLogout, onNavigate, currentPage }
     </header>
   );
 };
-
 export default Header;

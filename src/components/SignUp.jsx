@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import './Auth.css';
 const SignUp = ({ onSignUp, onSwitchToLogin, signUpFunction }) => {
   const [formData, setFormData] = useState({
     firstName: '',

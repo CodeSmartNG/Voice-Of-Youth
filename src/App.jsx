@@ -10,58 +10,102 @@ import Login from './components/Login';
 import SignUp from './components/SignUp';
 import Events from './components/Events';
 import AdminDashboard from './components/AdminDashboard';
+import ErrorBoundary from './components/ErrorBoundary';
+import LoadingSpinner from './components/LoadingSpinner';
+import Notification from './components/Notification';
 import './App.css';
 
-// Authentication functions using localStorage
+// Enhanced Authentication functions
 const localSignIn = async (email, password) => {
-  const user = userStorage.findUserByEmail(email);
+  try {
+    const user = userStorage.findUserByEmail(email);
 
-  if (!user) {
-    throw new Error('Invalid email or password');
+    if (!user) {
+      throw new Error('Invalid email or password');
+    }
+
+    if (user.password !== password) {
+      throw new Error('Invalid email or password');
+    }
+
+    // Update last login
+    user.lastLogin = new Date().toISOString();
+    userStorage.updateUser(user.email, user);
+
+    // Don't return password in user object
+    const { password: _, ...userWithoutPassword } = user;
+
+    return {
+      user: userWithoutPassword,
+      success: true
+    };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    throw error;
   }
-
-  if (user.password !== password) {
-    throw new Error('Invalid email or password');
-  }
-
-  // Don't return password in user object
-  const { password: _, ...userWithoutPassword } = user;
-
-  return {
-    user: userWithoutPassword
-  };
 };
 
 const localSignUp = async (email, password, firstName, lastName) => {
-  const isAdmin = email === 'admin@voy.com' || email.includes('admin');
+  try {
+    // Check if user already exists
+    const existingUser = userStorage.findUserByEmail(email);
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
 
-  const userData = {
-    email,
-    password, // In real app, this would be hashed
-    firstName,
-    lastName,
-    displayName: `${firstName} ${lastName}`,
-    isAdmin,
-    joinDate: new Date().toLocaleDateString(),
-    userId: Date.now().toString() // Add unique user ID
-  };
+    const isAdmin = email === 'admin@voy.com' || email.includes('admin');
 
-  const newUser = userStorage.createUser(userData);
+    const userData = {
+      email,
+      password, // In real app, this would be hashed
+      firstName,
+      lastName,
+      displayName: `${firstName} ${lastName}`,
+      isAdmin,
+      joinDate: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      userId: `user_${Date.now()}`,
+      profileCompleted: false,
+      preferences: {
+        notifications: true,
+        newsletter: true
+      }
+    };
 
-  // Update stats
-  analyticsStorage.incrementStat('totalUsers');
-  analyticsStorage.incrementStat('registrationsToday');
+    const newUser = userStorage.createUser(userData);
 
-  // Don't return password
-  const { password: _, ...userWithoutPassword } = newUser;
+    // Update analytics
+    analyticsStorage.incrementStat('totalUsers');
+    analyticsStorage.incrementStat('registrationsToday');
+    analyticsStorage.incrementStat('totalRegistrations');
 
-  return {
-    user: userWithoutPassword
-  };
+    // Don't return password
+    const { password: _, ...userWithoutPassword } = newUser;
+
+    return {
+      user: userWithoutPassword,
+      success: true
+    };
+  } catch (error) {
+    console.error('Sign up error:', error);
+    throw error;
+  }
 };
 
-const localSignOut = () => {
-  return Promise.resolve(sessionStorage.clearSession());
+const localSignOut = async () => {
+  try {
+    // Track logout in analytics
+    const currentUser = sessionStorage.getCurrentUser();
+    if (currentUser) {
+      analyticsStorage.incrementStat('totalLogouts');
+    }
+    
+    sessionStorage.clearSession();
+    return { success: true };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
 };
 
 // Main App Component
@@ -72,35 +116,82 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
+  const [appError, setAppError] = useState(null);
 
-  // Show notification function
-  const showNotification = (message, type = 'info') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+  // Enhanced notification system
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    const id = Date.now().toString();
+    setNotification({ id, message, type });
+    
+    if (duration > 0) {
+      setTimeout(() => {
+        setNotification(current => current?.id === id ? null : current);
+      }, duration);
+    }
   };
 
-  // Check if user is logged in on app start
+  // Clear notification
+  const clearNotification = () => {
+    setNotification(null);
+  };
+
+  // Enhanced error handler
+  const handleError = (error, context = 'App') => {
+    console.error(`${context} Error:`, error);
+    
+    const userMessage = error.message || 'An unexpected error occurred';
+    setAppError(userMessage);
+    showNotification(userMessage, 'error');
+    
+    // Log to analytics if available
+    if (analyticsStorage?.recordError) {
+      analyticsStorage.recordError({
+        context,
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  };
+
+  // Initialize application
   useEffect(() => {
-    const initializeApp = () => {
+    const initializeApp = async () => {
       try {
+        setLoading(true);
+        setAppError(null);
+
+        // Check for existing session
         const currentUser = sessionStorage.getCurrentUser();
-        if (currentUser) {
-          setIsLoggedIn(true);
-          setUser(currentUser);
-          setIsAdmin(currentUser.isAdmin || false);
-          
-          // Track user activity
-          analyticsStorage.incrementStat('dailyLogins');
-        }
         
-        // Initialize analytics if first visit
+        if (currentUser) {
+          // Verify user still exists in storage
+          const userExists = userStorage.findUserByEmail(currentUser.email);
+          
+          if (userExists) {
+            setIsLoggedIn(true);
+            setUser(currentUser);
+            setIsAdmin(currentUser.isAdmin || false);
+            
+            // Update user activity
+            analyticsStorage.incrementStat('dailyLogins');
+            analyticsStorage.incrementStat('totalLogins');
+            
+            showNotification(`Welcome back, ${currentUser.firstName}!`, 'success', 3000);
+          } else {
+            // User no longer exists in database
+            sessionStorage.clearSession();
+            showNotification('Session expired. Please log in again.', 'warning');
+          }
+        }
+
+        // Initialize analytics if needed
         const stats = analyticsStorage.getStats();
-        if (!stats.totalUsers) {
+        if (!stats.initialized) {
           analyticsStorage.initializeStats();
         }
+
       } catch (error) {
-        console.error('Error initializing app:', error);
-        showNotification('Error loading application', 'error');
+        handleError(error, 'App Initialization');
       } finally {
         setLoading(false);
       }
@@ -109,139 +200,236 @@ function App() {
     initializeApp();
   }, []);
 
+  // Enhanced login handler
   const handleLogin = async (userData) => {
     try {
       setIsLoggedIn(true);
       setUser(userData);
+      setAppError(null);
+      
       sessionStorage.setCurrentUser(userData);
       setIsAdmin(userData.isAdmin || false);
 
-      // Track login in analytics
+      // Update analytics
       analyticsStorage.incrementStat('totalLogins');
       analyticsStorage.incrementStat('dailyLogins');
+      analyticsStorage.incrementStat('activeSessions');
 
       setCurrentPage('home');
-      showNotification(`Welcome back, ${userData.firstName}!`, 'success');
+      showNotification(`Welcome back, ${userData.firstName}!`, 'success', 4000);
+      
     } catch (error) {
-      console.error('Login error:', error);
-      showNotification('Error during login', 'error');
+      handleError(error, 'Login Handler');
     }
   };
 
+  // Enhanced signup handler
   const handleSignUp = async (userData) => {
     try {
       setIsLoggedIn(true);
       setUser(userData);
+      setAppError(null);
+      
       sessionStorage.setCurrentUser(userData);
       setIsAdmin(userData.isAdmin || false);
 
       setCurrentPage('home');
-      showNotification(`Welcome to Voice of The Youth, ${userData.firstName}!`, 'success');
+      showNotification(`Welcome to Voice of The Youth, ${userData.firstName}!`, 'success', 5000);
+      
     } catch (error) {
-      console.error('Signup error:', error);
-      showNotification('Error during signup', 'error');
+      handleError(error, 'Signup Handler');
     }
   };
 
+  // Enhanced logout handler
   const handleLogout = async () => {
     try {
       await localSignOut();
+      
       setIsLoggedIn(false);
       setUser(null);
       setIsAdmin(false);
+      setAppError(null);
+      
       setCurrentPage('home');
-      showNotification('You have been logged out successfully', 'info');
+      showNotification('You have been logged out successfully', 'info', 3000);
+      
     } catch (error) {
-      console.error('Error signing out:', error);
-      showNotification('Error during logout', 'error');
+      handleError(error, 'Logout Handler');
     }
   };
 
+  // Enhanced navigation handler
   const handleNavigation = (page) => {
-    setCurrentPage(page);
-    
-    // Track page views for analytics
-    if (page !== 'login' && page !== 'signup') {
-      analyticsStorage.incrementStat('pageViews');
+    try {
+      setCurrentPage(page);
+      setAppError(null);
+      
+      // Track page views for analytics (excluding auth pages)
+      if (page !== 'login' && page !== 'signup') {
+        analyticsStorage.incrementStat('pageViews');
+        analyticsStorage.recordPageView(page);
+      }
+      
+    } catch (error) {
+      handleError(error, 'Navigation Handler');
     }
   };
 
+  // Enhanced page renderer with error boundaries
   const renderPage = () => {
     if (loading) {
+      return <LoadingSpinner message="Loading Voice of The Youth..." />;
+    }
+
+    // Show error page if critical app error exists
+    if (appError && currentPage !== 'login' && currentPage !== 'signup') {
       return (
-        <div className="loading-container">
-          <div className="loading-spinner">
-            <div className="spinner"></div>
-            <p>Loading Voice of The Youth...</p>
+        <div className="error-page">
+          <div className="error-content">
+            <h1>⚠️ Application Error</h1>
+            <p>{appError}</p>
+            <div className="error-actions">
+              <button 
+                onClick={() => setAppError(null)}
+                className="btn-primary"
+              >
+                Try Again
+              </button>
+              <button 
+                onClick={() => window.location.reload()}
+                className="btn-secondary"
+              >
+                Reload Page
+              </button>
+            </div>
           </div>
         </div>
       );
     }
 
-    switch (currentPage) {
-      case 'login':
-        return (
-          <Login 
-            onLogin={handleLogin} 
-            onSwitchToSignUp={() => handleNavigation('signup')}
-            signInFunction={localSignIn}
-            onShowNotification={showNotification}
-          />
-        );
-      case 'signup':
-        return (
-          <SignUp 
-            onSignUp={handleSignUp} 
-            onSwitchToLogin={() => handleNavigation('login')}
-            signUpFunction={localSignUp}
-            onShowNotification={showNotification}
-          />
-        );
-      case 'events':
-        if (!isLoggedIn) {
-          showNotification('Please log in to view events', 'warning');
-          return <Home user={user} isLoggedIn={isLoggedIn} />;
-        }
-        return <Events user={user} />;
-      case 'admin':
-        if (!isAdmin) {
-          showNotification('Access denied. Admin privileges required.', 'error');
-          return <Home user={user} isLoggedIn={isLoggedIn} />;
-        }
-        return <AdminDashboard isAdmin={isAdmin} user={user} />;
-      default:
-        return <Home user={user} isLoggedIn={isLoggedIn} />;
+    try {
+      switch (currentPage) {
+        case 'login':
+          return (
+            <ErrorBoundary>
+              <Login 
+                onLogin={handleLogin} 
+                onSwitchToSignUp={() => handleNavigation('signup')}
+                signInFunction={localSignIn}
+                onShowNotification={showNotification}
+                onError={handleError}
+              />
+            </ErrorBoundary>
+          );
+          
+        case 'signup':
+          return (
+            <ErrorBoundary>
+              <SignUp 
+                onSignUp={handleSignUp} 
+                onSwitchToLogin={() => handleNavigation('login')}
+                signUpFunction={localSignUp}
+                onShowNotification={showNotification}
+                onError={handleError}
+              />
+            </ErrorBoundary>
+          );
+          
+        case 'events':
+          if (!isLoggedIn) {
+            showNotification('Please log in to view events', 'warning');
+            handleNavigation('home');
+            return null;
+          }
+          return (
+            <ErrorBoundary>
+              <Events user={user} />
+            </ErrorBoundary>
+          );
+          
+        case 'admin':
+          if (!isAdmin) {
+            showNotification('Access denied. Admin privileges required.', 'error');
+            handleNavigation('home');
+            return null;
+          }
+          return (
+            <ErrorBoundary>
+              <AdminDashboard isAdmin={isAdmin} user={user} />
+            </ErrorBoundary>
+          );
+          
+        default:
+          return (
+            <ErrorBoundary>
+              <Home user={user} isLoggedIn={isLoggedIn} />
+            </ErrorBoundary>
+          );
+      }
+    } catch (error) {
+      handleError(error, 'Page Render');
+      return (
+        <div className="error-page">
+          <div className="error-content">
+            <h1>Page Load Error</h1>
+            <p>Failed to load the requested page.</p>
+            <button 
+              onClick={() => handleNavigation('home')}
+              className="btn-primary"
+            >
+              Return to Home
+            </button>
+          </div>
+        </div>
+      );
     }
   };
 
   return (
-    <div className="App">
-      {/* Notification System */}
-      {notification && (
-        <div className={`notification ${notification.type}`}>
-          <span className="notification-message">{notification.message}</span>
-          <button 
-            className="notification-close"
-            onClick={() => setNotification(null)}
-          >
-            ✕
-          </button>
-        </div>
-      )}
+    <ErrorBoundary>
+      <div className="App">
+        {/* Global Notification */}
+        {notification && (
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            onClose={clearNotification}
+          />
+        )}
 
-      <Header 
-        isLoggedIn={isLoggedIn}
-        isAdmin={isAdmin}
-        user={user}
-        onLogout={handleLogout}
-        onNavigate={handleNavigation}
-        currentPage={currentPage}
-      />
-      
-      <main className="main-content">
-        {renderPage()}
-      </main>
-    </div>
+        {/* Header */}
+        <Header 
+          isLoggedIn={isLoggedIn}
+          isAdmin={isAdmin}
+          user={user}
+          onLogout={handleLogout}
+          onNavigate={handleNavigation}
+          currentPage={currentPage}
+        />
+        
+        {/* Main Content */}
+        <main className="main-content">
+          {renderPage()}
+        </main>
+
+        {/* Global Error Overlay */}
+        {appError && (
+          <div className="global-error-overlay">
+            <div className="error-panel">
+              <h3>Application Issue</h3>
+              <p>{appError}</p>
+              <button 
+                onClick={() => setAppError(null)}
+                className="btn-primary"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 

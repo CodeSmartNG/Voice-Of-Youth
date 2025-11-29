@@ -92,10 +92,10 @@ const AdminDashboard = ({ isAdmin, user }) => {
         setPosts(updatedPosts);
         alert('Post created successfully!');
       }
-      
+
       // Reset form
       resetForm();
-      
+
     } catch (error) {
       console.error('Error saving post:', error);
       alert('Error saving post. Please try again.');
@@ -206,7 +206,9 @@ const AdminDashboard = ({ isAdmin, user }) => {
           <div className="post-form-overlay">
             <div className="post-form">
               <div className="form-header">
-                <h2>{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
+                <h2 className={editingPost ? 'editing' : ''}>
+                  {editingPost ? 'Edit Post' : 'Create New Post'}
+                </h2>
                 <button 
                   className="close-btn"
                   onClick={resetForm}
@@ -248,7 +250,7 @@ const AdminDashboard = ({ isAdmin, user }) => {
                     onChange={handleMediaChange}
                   />
                   <small>Supported formats: Images (JPG, PNG) and Videos (MP4, MOV)</small>
-                  
+
                   {formData.media && (
                     <div className="media-actions">
                       <button 
@@ -304,7 +306,7 @@ const AdminDashboard = ({ isAdmin, user }) => {
         {/* Posts List */}
         <div className="posts-list">
           <h3>Your Posts ({posts.length})</h3>
-          
+
           {posts.length === 0 ? (
             <div className="no-posts">
               <p>No posts yet. Create your first post!</p>
@@ -324,7 +326,7 @@ const AdminDashboard = ({ isAdmin, user }) => {
                       )}
                     </div>
                   )}
-                  
+
                   <div className="post-content">
                     <h4>{post.title}</h4>
                     <p>{post.description}</p>

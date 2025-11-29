@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { sessionStorage } from '../utils/storage';
 
-const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
+const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -8,6 +9,12 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Check for remember me on component mount
+  useEffect(() => {
+    const remembered = sessionStorage.getRememberMe();
+    setRememberMe(remembered);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -18,7 +25,9 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   };
 
   const handleRememberMeChange = (e) => {
-    setRememberMe(e.target.checked);
+    const remember = e.target.checked;
+    setRememberMe(remember);
+    sessionStorage.setRememberMe(remember);
   };
 
   const handleSubmit = async (e) => {
@@ -29,6 +38,13 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -36,26 +52,13 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
       const userCredential = await signInFunction(formData.email, formData.password);
       const user = userCredential.user;
       
-      // Store remember me preference
-      if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('rememberMe');
-      }
-      
       onLogin(user);
     } catch (error) {
       console.error('Login error:', error);
-      if (error.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address.');
-      } else if (error.code === 'auth/user-not-found') {
+      if (error.message.includes('Invalid email or password')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (error.message.includes('not found')) {
         setError('No account found with this email address.');
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Incorrect password. Please try again.');
-      } else if (error.code === 'auth/too-many-requests') {
-        setError('Too many failed attempts. Please try again later.');
-      } else if (error.code === 'auth/user-disabled') {
-        setError('This account has been disabled. Please contact support.');
       } else {
         setError('Failed to login. Please check your credentials and try again.');
       }
@@ -65,17 +68,47 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   };
 
   const handleForgotPassword = () => {
-    // You can implement password reset functionality here
-    alert('Password reset feature coming soon!');
+    if (!formData.email) {
+      setError('Please enter your email address first');
+      return;
+    }
+    
+    // Simple password reset simulation
+    const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
+    const user = users.find(u => u.email === formData.email);
+    
+    if (user) {
+      alert(`Password reset instructions would be sent to: ${formData.email}\n\nFor demo purposes, your password is stored in localStorage.`);
+    } else {
+      setError('No account found with this email address.');
+    }
+  };
+
+  const handleDemoLogin = (type) => {
+    const demoAccounts = {
+      user: { email: 'user@demo.com', password: 'demo123' },
+      admin: { email: 'admin@demo.com', password: 'admin123' }
+    };
+
+    const demo = demoAccounts[type];
+    setFormData(demo);
+    
+    // Auto-submit after a short delay
+    setTimeout(() => {
+      document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }, 100);
   };
 
   return (
     <div className="auth-container">
-      <h2 className="auth-title">🔐 Login to Voice of Youth</h2>
-      <p className="auth-subtitle">Welcome back! Please enter your details</p>
+      <div className="auth-header">
+        <h2 className="auth-title">🔐 Welcome Back</h2>
+        <p className="auth-subtitle">Sign in to your Voice of Youth account</p>
+      </div>
       
       {error && (
         <div className="error-message">
+          <span className="error-icon">⚠️</span>
           {error}
         </div>
       )}
@@ -92,6 +125,7 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
             placeholder="Enter your email address"
             required
             disabled={loading}
+            autoComplete="email"
           />
         </div>
 
@@ -114,6 +148,7 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
             placeholder="Enter your password"
             required
             disabled={loading}
+            autoComplete="current-password"
           />
         </div>
 
@@ -126,7 +161,7 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
               disabled={loading}
             />
             <span className="checkmark"></span>
-            Remember me
+            Remember me for 30 days
           </label>
         </div>
 
@@ -141,35 +176,59 @@ const Login = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
               Signing in...
             </>
           ) : (
-            'Sign In'
+            'Sign In to Your Account'
           )}
         </button>
       </form>
 
-      <div className="auth-divider">
-        <span>Or continue with</span>
+      {/* Demo Accounts */}
+      <div className="demo-accounts">
+        <h4>Quick Demo Access:</h4>
+        <div className="demo-buttons">
+          <button 
+            type="button"
+            className="demo-btn user-demo"
+            onClick={() => handleDemoLogin('user')}
+            disabled={loading}
+          >
+            👤 Demo User Account
+          </button>
+          <button 
+            type="button"
+            className="demo-btn admin-demo"
+            onClick={() => handleDemoLogin('admin')}
+            disabled={loading}
+          >
+            ⚙️ Demo Admin Account
+          </button>
+        </div>
       </div>
 
-      {/* Social login buttons - you can implement these later */}
-      <div className="social-login">
-        <button className="social-btn google-btn" disabled>
-          <span className="social-icon">🔍</span>
-          Continue with Google
-        </button>
-        <button className="social-btn facebook-btn" disabled>
-          <span className="social-icon">👤</span>
-          Continue with Facebook
-        </button>
+      <div className="auth-divider">
+        <span>New to Voice of Youth?</span>
       </div>
 
       <div className="auth-switch">
-        Don't have an account?{' '}
-        <span className="switch-link" onClick={onSwitchToSignUp}>
-          Sign up here
-        </span>
+        <button 
+          className="switch-btn"
+          onClick={onSwitchToSignUp}
+          disabled={loading}
+        >
+          Create New Account
+        </button>
+      </div>
+
+      <div className="auth-features">
+        <h4>Why join Voice of Youth?</h4>
+        <ul className="features-list">
+          <li>🎯 Connect with like-minded youth</li>
+          <li>🚀 Access exclusive events and opportunities</li>
+          <li>📢 Share your ideas and make an impact</li>
+          <li>🌟 Build your leadership skills</li>
+        </ul>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default SignIn;

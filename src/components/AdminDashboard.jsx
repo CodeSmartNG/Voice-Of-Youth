@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { postStorage, analyticsStorage } from '../utils/storage';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ isAdmin, user }) => {
   const [posts, setPosts] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,11 +13,16 @@ const AdminDashboard = ({ isAdmin, user }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Load posts from storage
+  // Load posts from localStorage on component mount
   useEffect(() => {
-    const savedPosts = postStorage.getPosts();
+    const savedPosts = JSON.parse(localStorage.getItem('voyPosts') || '[]');
     setPosts(savedPosts);
   }, []);
+
+  // Save posts to localStorage whenever posts change
+  useEffect(() => {
+    localStorage.setItem('voyPosts', JSON.stringify(posts));
+  }, [posts]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -52,47 +57,89 @@ const AdminDashboard = ({ isAdmin, user }) => {
     setLoading(true);
 
     try {
-      const newPost = postStorage.createPost({
-        title: formData.title,
-        description: formData.description,
-        media: formData.media,
-        mediaType: formData.mediaType,
-        author: user?.displayName || 'Admin',
-        authorId: user?.uid
-      });
+      if (editingPost) {
+        // Update existing post
+        const updatedPosts = posts.map(post => 
+          post.id === editingPost.id 
+            ? { 
+                ...post, 
+                title: formData.title,
+                description: formData.description,
+                media: formData.media || post.media,
+                mediaType: formData.media ? formData.mediaType : post.mediaType,
+                updatedAt: new Date().toISOString()
+              }
+            : post
+        );
+        setPosts(updatedPosts);
+        alert('Post updated successfully!');
+      } else {
+        // Create new post
+        const newPost = {
+          id: Date.now().toString(),
+          title: formData.title,
+          description: formData.description,
+          media: formData.media,
+          mediaType: formData.mediaType,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          author: user?.displayName || 'Admin',
+          likes: 0,
+          shares: 0
+        };
 
-      setPosts([newPost, ...posts]);
-      
-      // Update stats
-      analyticsStorage.incrementStat('totalPosts');
+        const updatedPosts = [newPost, ...posts];
+        setPosts(updatedPosts);
+        alert('Post created successfully!');
+      }
       
       // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        media: null,
-        mediaType: 'image'
-      });
-      setShowForm(false);
+      resetForm();
       
-      alert('Post created successfully!');
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Error creating post. Please try again.');
+      console.error('Error saving post:', error);
+      alert('Error saving post. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      media: null,
+      mediaType: 'image'
+    });
+    setEditingPost(null);
+    setShowForm(false);
+  };
+
+  const editPost = (post) => {
+    setFormData({
+      title: post.title,
+      description: post.description,
+      media: post.media,
+      mediaType: post.mediaType
+    });
+    setEditingPost(post);
+    setShowForm(true);
+  };
+
   const deletePost = (postId) => {
     if (window.confirm('Are you sure you want to delete this post?')) {
-      const result = postStorage.deletePost(postId);
-      if (result.success) {
-        const updatedPosts = posts.filter(post => post.id !== postId);
-        setPosts(updatedPosts);
-        alert('Post deleted successfully!');
-      }
+      const updatedPosts = posts.filter(post => post.id !== postId);
+      setPosts(updatedPosts);
+      alert('Post deleted successfully!');
     }
+  };
+
+  const clearMedia = () => {
+    setFormData(prev => ({
+      ...prev,
+      media: null,
+      mediaType: 'image'
+    }));
   };
 
   // If not admin, show access denied
@@ -107,8 +154,6 @@ const AdminDashboard = ({ isAdmin, user }) => {
     );
   }
 
-  const stats = analyticsStorage.getStats();
-
   return (
     <div className="admin-dashboard">
       <div className="admin-header">
@@ -120,7 +165,7 @@ const AdminDashboard = ({ isAdmin, user }) => {
         {/* Stats Overview */}
         <div className="stats-overview">
           <div className="stat-card">
-            <div className="stat-number">{stats.totalPosts || 0}</div>
+            <div className="stat-number">{posts.length}</div>
             <div className="stat-label">Total Posts</div>
           </div>
           <div className="stat-card">
@@ -136,13 +181,189 @@ const AdminDashboard = ({ isAdmin, user }) => {
             <div className="stat-label">Video Posts</div>
           </div>
           <div className="stat-card">
-            <div className="stat-number">{stats.totalUsers || 0}</div>
-            <div className="stat-label">Total Users</div>
+            <div className="stat-number">
+              {posts.filter(post => post.updatedAt !== post.createdAt).length}
+            </div>
+            <div className="stat-label">Updated Posts</div>
           </div>
         </div>
 
-        {/* Rest of your AdminDashboard component remains the same */}
-        {/* ... */}
+        {/* Action Bar */}
+        <div className="action-bar">
+          <button 
+            className="create-post-btn"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+          >
+            📝 Create New Post
+          </button>
+        </div>
+
+        {/* Create/Edit Post Form */}
+        {showForm && (
+          <div className="post-form-overlay">
+            <div className="post-form">
+              <div className="form-header">
+                <h2>{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
+                <button 
+                  className="close-btn"
+                  onClick={resetForm}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label>Post Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    placeholder="Enter post title"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Description *</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter post description"
+                    rows="4"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Media Upload</label>
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaChange}
+                  />
+                  <small>Supported formats: Images (JPG, PNG) and Videos (MP4, MOV)</small>
+                  
+                  {formData.media && (
+                    <div className="media-actions">
+                      <button 
+                        type="button" 
+                        className="clear-media-btn"
+                        onClick={clearMedia}
+                      >
+                        🗑️ Remove Media
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {formData.media && (
+                  <div className="media-preview">
+                    <label>Preview:</label>
+                    {formData.mediaType === 'image' ? (
+                      <img src={formData.media} alt="Preview" />
+                    ) : (
+                      <video controls>
+                        <source src={formData.media} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    )}
+                  </div>
+                )}
+
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="cancel-btn"
+                    onClick={resetForm}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="submit-btn"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      editingPost ? 'Updating...' : 'Publishing...'
+                    ) : (
+                      editingPost ? 'Update Post' : 'Publish Post'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Posts List */}
+        <div className="posts-list">
+          <h3>Your Posts ({posts.length})</h3>
+          
+          {posts.length === 0 ? (
+            <div className="no-posts">
+              <p>No posts yet. Create your first post!</p>
+            </div>
+          ) : (
+            <div className="posts-grid">
+              {posts.map(post => (
+                <div key={post.id} className="post-card">
+                  {post.media && (
+                    <div className="post-media">
+                      {post.mediaType === 'image' ? (
+                        <img src={post.media} alt={post.title} />
+                      ) : (
+                        <video controls>
+                          <source src={post.media} type="video/mp4" />
+                        </video>
+                      )}
+                    </div>
+                  )}
+                  
+                  <div className="post-content">
+                    <h4>{post.title}</h4>
+                    <p>{post.description}</p>
+                    <div className="post-meta">
+                      <span>By {post.author}</span>
+                      <span>•</span>
+                      <span>Created: {new Date(post.createdAt).toLocaleDateString()}</span>
+                      {post.updatedAt !== post.createdAt && (
+                        <>
+                          <span>•</span>
+                          <span>Updated: {new Date(post.updatedAt).toLocaleDateString()}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="post-stats">
+                      <span>❤️ {post.likes} likes</span>
+                      <span>🔗 {post.shares} shares</span>
+                    </div>
+                  </div>
+
+                  <div className="post-actions">
+                    <button 
+                      className="edit-btn"
+                      onClick={() => editPost(post)}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button 
+                      className="delete-btn"
+                      onClick={() => deletePost(post.id)}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

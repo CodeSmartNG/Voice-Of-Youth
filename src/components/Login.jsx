@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { sessionStorage } from '../utils/storage';
-import './Auth.css';
+import { sessionStorage, userStorage } from '../utils/storage';
 
 const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
   const [formData, setFormData] = useState({
@@ -16,6 +15,42 @@ const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
     const remembered = sessionStorage.getRememberMe();
     setRememberMe(remembered);
   }, []);
+
+  // Create demo accounts if they don't exist
+  useEffect(() => {
+    createDemoAccounts();
+  }, []);
+
+  const createDemoAccounts = () => {
+    const users = userStorage.getUsers();
+    const demoAccounts = [
+      {
+        email: 'user@demo.com',
+        password: 'demo123',
+        firstName: 'Demo',
+        lastName: 'User',
+        displayName: 'Demo User',
+        isAdmin: false,
+        joinDate: new Date().toLocaleDateString()
+      },
+      {
+        email: 'admin@demo.com',
+        password: 'admin123',
+        firstName: 'Admin',
+        lastName: 'Demo',
+        displayName: 'Admin Demo',
+        isAdmin: true,
+        joinDate: new Date().toLocaleDateString()
+      }
+    ];
+
+    demoAccounts.forEach(demoAccount => {
+      const existingUser = users.find(u => u.email === demoAccount.email);
+      if (!existingUser) {
+        userStorage.createUser(demoAccount);
+      }
+    });
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -75,29 +110,49 @@ const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
     }
     
     // Simple password reset simulation
-    const users = JSON.parse(localStorage.getItem('voyUsers') || '[]');
+    const users = userStorage.getUsers();
     const user = users.find(u => u.email === formData.email);
     
     if (user) {
-      alert(`Password reset instructions would be sent to: ${formData.email}\n\nFor demo purposes, your password is stored in localStorage.`);
+      alert(`Password reset instructions would be sent to: ${formData.email}\n\nFor demo purposes:\nEmail: ${user.email}\nPassword: ${user.password}`);
     } else {
       setError('No account found with this email address.');
     }
   };
 
-  const handleDemoLogin = (type) => {
+  const handleDemoLogin = async (type) => {
     const demoAccounts = {
       user: { email: 'user@demo.com', password: 'demo123' },
       admin: { email: 'admin@demo.com', password: 'admin123' }
     };
 
     const demo = demoAccounts[type];
+    
+    // Set the form data
     setFormData(demo);
     
-    // Auto-submit after a short delay
-    setTimeout(() => {
-      document.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    }, 100);
+    // Clear any previous errors
+    setError('');
+    setLoading(true);
+
+    try {
+      // Wait a moment for the form to update, then submit
+      setTimeout(async () => {
+        try {
+          const userCredential = await signInFunction(demo.email, demo.password);
+          const user = userCredential.user;
+          onLogin(user);
+        } catch (error) {
+          console.error('Demo login error:', error);
+          setError(`Demo login failed: ${error.message}`);
+          setLoading(false);
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Demo login setup error:', error);
+      setError('Failed to setup demo login');
+      setLoading(false);
+    }
   };
 
   return (
@@ -202,6 +257,10 @@ const SignIn = ({ onLogin, onSwitchToSignUp, signInFunction }) => {
           >
             ⚙️ Demo Admin Account
           </button>
+        </div>
+        <div className="demo-credentials">
+          <p><strong>User Demo:</strong> user@demo.com / demo123</p>
+          <p><strong>Admin Demo:</strong> admin@demo.com / admin123</p>
         </div>
       </div>
 

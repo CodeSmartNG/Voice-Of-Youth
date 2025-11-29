@@ -1,0 +1,180 @@
+/* Enhanced Auth Styles */
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.demo-accounts {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(67, 97, 238, 0.05);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.demo-accounts h4 {
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.demo-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+}
+
+.demo-btn {
+  padding: 1rem;
+  border: 2px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.demo-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.demo-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.user-demo {
+  border-color: #4cc9f0;
+  color: #4cc9f0;
+}
+
+.user-demo:hover:not(:disabled) {
+  background: #4cc9f0;
+  color: white;
+}
+
+.admin-demo {
+  border-color: #7209b7;
+  color: #7209b7;
+}
+
+.admin-demo:hover:not(:disabled) {
+  background: #7209b7;
+  color: white;
+}
+
+.switch-btn {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.switch-btn:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+}
+
+.switch-btn.secondary {
+  border-color: var(--text-light);
+  color: var(--text-light);
+}
+
+.switch-btn.secondary:hover:not(:disabled) {
+  background: var(--text-light);
+  color: white;
+}
+
+.auth-features,
+.auth-benefits {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.auth-features h4,
+.auth-benefits h4 {
+  margin-bottom: 1rem;
+  color: var(--text-dark);
+  text-align: center;
+}
+
+.features-list,
+.benefits-list {
+  list-style: none;
+  padding: 0;
+}
+
+.features-list li,
+.benefits-list li {
+  padding: 0.5rem 0;
+  color: var(--text-light);
+}
+
+.benefits-list li {
+  color: var(--text-dark);
+}
+
+/* Password Strength */
+.password-strength {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.strength-bar {
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 0.25rem;
+  transition: var(--transition);
+}
+
+.form-success {
+  color: #4cc9f0;
+  font-weight: 600;
+}
+
+.terms-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+.error-icon {
+  margin-right: 0.5rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .demo-buttons {
+    gap: 0.75rem;
+  }
+  
+  .auth-features,
+  .auth-benefits {
+    margin: 1.5rem 0;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .demo-accounts {
+    padding: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,4 @@
-/* Emergency error styles */
-.error-container, .error-boundary {
+.error-boundary {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -13,104 +12,227 @@
   background: white;
   padding: 40px;
   border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   text-align: center;
   max-width: 500px;
   width: 100%;
+  animation: slideInUp 0.3s ease-out;
 }
 
-.error-content h1 {
-  color: #e74c3c;
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: bounce 1s infinite alternate;
+}
+
+.error-title {
+  color: #2c3e50;
   font-size: 1.8rem;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.error-message {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.error-details {
+  text-align: left;
+  margin: 25px 0;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.error-details summary {
+  padding: 15px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.error-details summary:hover {
+  background: #e9ecef;
+}
+
+.error-details[open] summary {
+  border-bottom-color: #e9ecef;
+}
+
+.error-stack {
+  padding: 15px;
+  background: #f8f9fa;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.error-stack strong {
+  color: #e74c3c;
+  display: block;
   margin-bottom: 10px;
 }
 
-.error-content h2 {
-  color: #2c3e50;
-  font-size: 1.4rem;
-  margin-bottom: 20px;
+.error-stack pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #495057;
+  margin: 0;
+  line-height: 1.4;
 }
 
-.error-content h3 {
-  color: #34495e;
-  font-size: 1.2rem;
-  margin: 20px 0 10px;
-}
-
-.error-content p {
-  color: #7f8c8d;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.error-divider, .divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #bdc3c7, transparent);
-  margin: 25px 0;
-}
-
-.action-buttons {
+.error-actions {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
+  margin: 30px 0 20px;
 }
 
-.btn-primary, .retry-button {
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  min-width: 120px;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
   background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-  background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
-  padding: 10px 22px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover, .retry-button:hover {
-  transform: translateY(-2px);
+  background: #3498db;
+  color: white;
 }
 
 .btn-secondary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.btn-outline:hover {
   background: #667eea;
   color: white;
+  transform: translateY(-2px);
 }
 
-.loading-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.error-help {
+  border-top: 1px solid #e9ecef;
+  padding-top: 20px;
+  margin-top: 20px;
 }
 
-.loading-spinner {
-  text-align: center;
-  color: white;
+.error-help p {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255,255,255,0.3);
-  border-top: 4px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+/* Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-10px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .error-boundary {
+    padding: 15px;
+  }
+
+  .error-content {
+    padding: 30px 20px;
+  }
+
+  .error-title {
+    font-size: 1.5rem;
+  }
+
+  .error-message {
+    font-size: 1rem;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .btn {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .error-icon {
+    font-size: 3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .error-content {
+    padding: 25px 15px;
+  }
+
+  .error-title {
+    font-size: 1.3rem;
+  }
+
+  .error-stack {
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .error-content {
+    animation: none;
+  }
+  
+  .error-icon {
+    animation: none;
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
 }
